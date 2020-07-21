@@ -1,9 +1,12 @@
 var path = require('path');
 
+const environment = process.env.NODE_ENV || 'development';
+
 module.exports = {
     entry: "./src/ImageResize.js",
+    mode: environment,
     output: {
-        path: __dirname,
+        path: path.join(__dirname, 'dist'),
         library: 'ImageResize',
         libraryTarget: 'umd',
         filename: "image-resize.min.js"
@@ -16,16 +19,6 @@ module.exports = {
                 exclude: /(node_modules|bower_components)/,
                 use: [{
                     loader: 'babel-loader',
-                    options: {
-                        "presets": [["es2015", { "modules": false }]],
-                        "plugins": ["babel-plugin-transform-class-properties"]
-                    }
-                }]
-            },
-            {
-                test: /\.svg$/,
-                use: [{
-                    loader: 'raw-loader'
                 }]
             }
         ]

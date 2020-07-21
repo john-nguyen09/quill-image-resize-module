@@ -1,11 +1,8 @@
-import Quill from "quill";
-import defaultsDeep from 'lodash/defaultsDeep';
 import DefaultOptions from './DefaultOptions';
 import { DisplaySize } from './modules/DisplaySize';
-import { Toolbar } from './modules/Toolbar';
 import { Resize } from './modules/Resize';
 
-const knownModules = { DisplaySize, Toolbar, Resize };
+const knownModules = { DisplaySize, Resize };
 
 /**
  * Custom module for quilljs to allow user to resize <img> elements
@@ -26,7 +23,7 @@ export default class ImageResize {
 		}
 
 		// Apply options to default options
-		this.options = defaultsDeep({}, options, DefaultOptions);
+		this.options = Object.assign({}, options, DefaultOptions);
 
 		// (see above about moduleClasses)
 		if (moduleClasses !== false) {
@@ -42,6 +39,10 @@ export default class ImageResize {
 		this.quill.root.addEventListener('scroll', this.handleScroll, false);
 
 		this.quill.root.parentNode.style.position = this.quill.root.parentNode.style.position || 'relative';
+
+		this.quill.on('text-change', () => {
+			this.repositionElements();
+		});
 
 		// setup modules
 		this.moduleClasses = this.options.modules;
@@ -103,7 +104,7 @@ export default class ImageResize {
 		}
 	};
 
-	handleScroll = (evt) => {
+	handleScroll = () => {
 		//Hide the overlay when the editor is scrolled,
 		//otherwise image is no longer correctly aligned with overlay
 		this.hide();
@@ -123,10 +124,9 @@ export default class ImageResize {
 			this.hideOverlay();
 		}
 
-		this.quill.setSelection(null);
-
-		// prevent spurious text selection
-		this.setUserSelect('none');
+		const blot = this.quill.constructor.find(this.img);
+		const index = this.quill.getIndex(blot);
+		this.quill.setSelection(index, 0);
 
 		// listen for the image being deleted or moved
 		document.addEventListener('keyup', this.checkImage, true);
@@ -153,9 +153,6 @@ export default class ImageResize {
 		// stop listening for image deletion or movement
 		document.removeEventListener('keyup', this.checkImage);
 		this.quill.root.removeEventListener('input', this.checkImage);
-
-		// reset user-select
-		this.setUserSelect('');
 	};
 
 	repositionElements = () => {
@@ -203,67 +200,4 @@ export default class ImageResize {
 			this.hide();
 		}
 	};
-}
-
-if (window.Quill) {
-
-	//BEGIN allow image alignment styles
-	const ImageFormatAttributesList = [
-		'alt',
-		'height',
-		'width',
-		'style',
-	];
-
-	var BaseImageFormat = window.Quill.import('formats/image');
-	class ImageFormat extends BaseImageFormat {
-		static formats(domNode) {
-			return ImageFormatAttributesList.reduce(function (formats, attribute) {
-				if (domNode.hasAttribute(attribute)) {
-					formats[attribute] = domNode.getAttribute(attribute);
-				}
-				return formats;
-			}, {});
-		}
-		format(name, value) {
-			if (ImageFormatAttributesList.indexOf(name) > -1) {
-				if (value) {
-					this.domNode.setAttribute(name, value);
-				} else {
-					this.domNode.removeAttribute(name);
-				}
-			} else {
-				super.format(name, value);
-			}
-		}
-	}
-
-	window.Quill.register(ImageFormat, true);
-	//END allow image alignment styles
-
-
-	//Add support for IE 11
-	if (typeof Object.assign != 'function') {
-		Object.assign = function (target) {
-			'use strict';
-			if (target == null) {
-				throw new TypeError('Cannot convert undefined or null to object');
-			}
-
-			target = Object(target);
-			for (var index = 1; index < arguments.length; index++) {
-				var source = arguments[index];
-				if (source != null) {
-					for (var key in source) {
-						if (Object.prototype.hasOwnProperty.call(source, key)) {
-							target[key] = source[key];
-						}
-					}
-				}
-			}
-			return target;
-		};
-	}
-
-	window.Quill.register('modules/imageResize', ImageResize);
 }
