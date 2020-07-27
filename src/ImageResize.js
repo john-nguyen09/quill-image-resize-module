@@ -1,6 +1,7 @@
 import DefaultOptions from './DefaultOptions';
 import { DisplaySize } from './modules/DisplaySize';
 import { Resize } from './modules/Resize';
+import defaultsDeep from 'lodash.defaultsdeep';
 
 const knownModules = { DisplaySize, Resize };
 
@@ -23,7 +24,7 @@ export default class ImageResize {
 		}
 
 		// Apply options to default options
-		this.options = Object.assign({}, options, DefaultOptions);
+		this.options = defaultsDeep({}, options, DefaultOptions);
 
 		// (see above about moduleClasses)
 		if (moduleClasses !== false) {
